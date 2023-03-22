@@ -18,6 +18,7 @@ const (
 	kBakeTime     = 1000
 	kGarnishTime  = 4000
 	kDecorateTime = 8000
+	kCakeNum      = 5
 )
 
 var uncookedCakes = make(map[int]cake)
@@ -33,18 +34,26 @@ var garnishMutex = sync.RWMutex{}
 var doneMutex = sync.RWMutex{}
 
 func main() {
-	for i := 0; i < 5; i++ {
+	for i := 0; i < kCakeNum; i++ {
 		uncookedCakes[i] = cake{i}
 	}
+	startTime := time.Now()
 	baker := worker{true}
 	garnisher := worker{true}
 	wg.Add(3)
 	go bake(&baker)
 	go garnish(&garnisher, &baker)
 	go decorate(&garnisher)
-	go printer()
+	go func() {
+		for {
+			printer()
+			time.Sleep(500 * time.Millisecond)
+		}
+	}()
 	wg.Wait()
-
+	printer()
+	elapsed := int(time.Since(startTime).Seconds())
+	fmt.Println("It took", elapsed, "seconds")
 }
 
 func bake(baker *worker) {
@@ -97,7 +106,7 @@ func garnish(garnisher *worker, baker *worker) {
 						garnishedCakes[seeker] = val
 						garnishMutex.Unlock()
 						break garnisherLoop
-					} else if !baker.willWork {
+					} else if !baker.willWork && seeker2 == 1 {
 						bakeMutex.Unlock()
 						garnisher.willWork = false
 						wg.Done()
@@ -128,7 +137,7 @@ func decorate(garnisher *worker) {
 				doneCakes[i] = val
 				doneMutex.Unlock()
 				break
-			} else if !garnisher.willWork {
+			} else if !garnisher.willWork && seeker == 1 {
 				garnishMutex.Unlock()
 				wg.Done()
 				return
@@ -142,20 +151,33 @@ func decorate(garnisher *worker) {
 }
 
 func printer() {
-	for {
-		uncookMutex.Lock()
-		fmt.Println(uncookedCakes)
-		uncookMutex.Unlock()
-		bakeMutex.Lock()
-		fmt.Println(bakedCakes)
-		bakeMutex.Unlock()
-		garnishMutex.Lock()
-		fmt.Println(garnishedCakes)
-		garnishMutex.Unlock()
-		doneMutex.Lock()
-		fmt.Println(doneCakes)
-		doneMutex.Unlock()
-		time.Sleep(500 * time.Millisecond)
-		fmt.Println("\n\n\n\n")
+	fmt.Print("\033[H\033[2J")
+	uncookMutex.Lock()
+	fmt.Print("Cakes to bake: ")
+	for _, val := range uncookedCakes {
+		fmt.Print("[Cake ", val.id+1, "]")
 	}
+	fmt.Println()
+	uncookMutex.Unlock()
+	bakeMutex.Lock()
+	fmt.Print("Baked cakes: ")
+	for _, val := range bakedCakes {
+		fmt.Print("[Cake ", val.id+1, "]")
+	}
+	fmt.Println()
+	bakeMutex.Unlock()
+	garnishMutex.Lock()
+	fmt.Print("Garnished cakes: ")
+	for _, val := range garnishedCakes {
+		fmt.Print("[Cake ", val.id+1, "]")
+	}
+	fmt.Println()
+	garnishMutex.Unlock()
+	doneMutex.Lock()
+	fmt.Print("Completed cakes: ")
+	for _, val := range doneCakes {
+		fmt.Print("[Cake ", val.id+1, "]")
+	}
+	fmt.Println()
+	doneMutex.Unlock()
 }
