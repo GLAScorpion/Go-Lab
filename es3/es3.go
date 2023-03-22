@@ -55,7 +55,9 @@ func bake(baker *worker) {
 		for {
 			bakeMutex.Lock()
 			if _, ok := bakedCakes[seeker]; !ok {
+				bakeMutex.Unlock()
 				time.Sleep(kBakeTime * time.Millisecond)
+				bakeMutex.Lock()
 				bakedCakes[seeker] = val
 				bakeMutex.Unlock()
 				uncookMutex.Lock()
@@ -89,8 +91,8 @@ func garnish(garnisher *worker, baker *worker) {
 					bakeMutex.Lock()
 					if val, ok := bakedCakes[seeker2]; ok {
 						delete(bakedCakes, seeker2)
-						time.Sleep(kGarnishTime * time.Millisecond)
 						bakeMutex.Unlock()
+						time.Sleep(kGarnishTime * time.Millisecond)
 						garnishMutex.Lock()
 						garnishedCakes[seeker] = val
 						garnishMutex.Unlock()
