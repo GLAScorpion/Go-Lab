@@ -1,7 +1,8 @@
 package main
+
 import (
-	"sync"
 	"fmt"
+	"sync"
 )
 
 var wg = sync.WaitGroup{}
@@ -12,12 +13,12 @@ func main() {
 	toFind := 'c'
 	ch := make(chan int, len(string))
 	willClose := false
-	for key , v := range string {
+	for key, v := range string {
 		wg.Add(1)
-		if(key == len(string) - 1){
+		if key == len(string)-1 {
 			willClose = true
 		}
-		go checker(ch,toFind,v, willClose)
+		go checker(ch, toFind, v, willClose)
 	}
 	wg.Wait()
 	for r := range ch {
@@ -26,14 +27,14 @@ func main() {
 	fmt.Printf("Il carattere %c è stato trovato %d volte\n", toFind, count)
 }
 
-func checker(ch chan <- int , toFind rune, toCheck rune, closeCh bool) {
-	if(toFind == toCheck){
+func checker(ch chan<- int, toFind rune, toCheck rune, closeCh bool) {
+	if toFind == toCheck {
 		ch <- 1
-	}else{
+	} else {
 		ch <- 0
 	}
 	wg.Done()
-	if(closeCh){
+	if closeCh {
 		wg.Wait()
 		close(ch)
 	}
