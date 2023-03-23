@@ -14,17 +14,17 @@ type worker struct {
 	willWork bool
 }
 
-const (
+const ( //costanti di tempo dei lavori in millisecondi
 	kBakeTime     = 1000
 	kGarnishTime  = 4000
 	kDecorateTime = 8000
-	kCakeNum      = 5
+	kCakeNum      = 5 // numero di torte da processare
 )
 
-var uncookedCakes = make(map[int]cake)
-var bakedCakes = make(map[int]cake)
-var garnishedCakes = make(map[int]cake)
-var doneCakes = make(map[int]cake)
+var uncookedCakes = make(map[int]cake)  // torte da preparare
+var bakedCakes = make(map[int]cake)     // torte cotte
+var garnishedCakes = make(map[int]cake) // torte guarnite
+var doneCakes = make(map[int]cake)      // torte complete
 
 var wg = sync.WaitGroup{}
 
@@ -34,17 +34,17 @@ var garnishMutex = sync.RWMutex{}
 var doneMutex = sync.RWMutex{}
 
 func main() {
-	for i := 0; i < kCakeNum; i++ {
+	for i := 0; i < kCakeNum; i++ { //torte vengono inizializzate
 		uncookedCakes[i] = cake{i}
 	}
 	startTime := time.Now()
-	baker := worker{true}
+	baker := worker{true} // variabili che permettono di controllare se il pasticcere precedente produrrà una torta
 	garnisher := worker{true}
 	wg.Add(3)
 	go bake(&baker)
 	go garnish(&garnisher, &baker)
 	go decorate(&garnisher)
-	go func() {
+	go func() { // routine che stampa in tempo reale lo stato degli spazi a disposizione dei pasticceri
 		for {
 			printer()
 			time.Sleep(500 * time.Millisecond)
@@ -52,22 +52,22 @@ func main() {
 	}()
 	wg.Wait()
 	printer()
-	elapsed := int(time.Since(startTime).Seconds())
+	elapsed := int(time.Since(startTime).Seconds()) // tempo trascorso per produrre le torte
 	fmt.Println("It took", elapsed, "seconds")
 }
 
 func bake(baker *worker) {
 	uncookMutex.Lock()
-	for key, val := range uncookedCakes {
+	for key, val := range uncookedCakes { // accede a tutte le torte iniziali senza vincoli
 		uncookMutex.Unlock()
-		seeker := 0
+		seeker := 0 //indice per scorrere gli spazi dove mettere le torte complete
 		for {
 			bakeMutex.Lock()
-			if _, ok := bakedCakes[seeker]; !ok {
+			if _, ok := bakedCakes[seeker]; !ok { //lavora solo se c'è uno spazio libero tra i 2 slot a disposizione
 				bakeMutex.Unlock()
-				time.Sleep(kBakeTime * time.Millisecond)
+				time.Sleep(kBakeTime * time.Millisecond) //lavoro
 				bakeMutex.Lock()
-				bakedCakes[seeker] = val
+				bakedCakes[seeker] = val //posiziona torta nello slot vuoto
 				bakeMutex.Unlock()
 				uncookMutex.Lock()
 				delete(uncookedCakes, key)
@@ -76,13 +76,13 @@ func bake(baker *worker) {
 			} else {
 				bakeMutex.Unlock()
 			}
-			seeker = (seeker + 1) % 2
+			seeker = (seeker + 1) % 2 // gli unici indici validi sono 2: 0 e 1
 		}
 		uncookMutex.Lock()
 	}
 	uncookMutex.Unlock()
 	bakeMutex.Lock()
-	baker.willWork = false
+	baker.willWork = false //non produrrà altre torte
 	bakeMutex.Unlock()
 	wg.Done()
 }

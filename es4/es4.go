@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-var eur_usd = make(chan float64, 5)
-var gbp_usd = make(chan float64, 5)
-var jpy_usd = make(chan float64, 5)
+var eurUSD = make(chan float64, 5)
+var gbpUSD = make(chan float64, 5)
+var jpyUSD = make(chan float64, 5)
 
 var (
 	holdEUR = 0.0
@@ -37,9 +37,9 @@ func main() {
 
 func simulateMarketData() {
 	for {
-		eur_usd <- float64(int32(rand.Int31()))/float64(math.MaxInt32)*0.5 + 1.0
-		gbp_usd <- float64(int32(rand.Int31()))/float64(math.MaxInt32)*0.5 + 1.0
-		jpy_usd <- float64(int32(rand.Int31()))/float64(math.MaxInt32)*0.003 + 0.006
+		eurUSD <- float64(int32(rand.Int31()))/float64(math.MaxInt32)*0.5 + 1.0
+		gbpUSD <- float64(int32(rand.Int31()))/float64(math.MaxInt32)*0.5 + 1.0
+		jpyUSD <- float64(int32(rand.Int31()))/float64(math.MaxInt32)*0.003 + 0.006
 		time.Sleep(time.Second)
 	}
 }
@@ -50,7 +50,7 @@ func selectPair() {
 	timeJPY = time.Now()
 	for {
 		select {
-		case val := <-eur_usd:
+		case val := <-eurUSD:
 			if val > 1.20 && !sellEUR {
 				holdEUR = val
 				timeEUR = time.Now()
@@ -59,7 +59,7 @@ func selectPair() {
 				sellEUR = false
 				fmt.Println("Detected EUR/USD at", holdEUR, ", sold at", val, ". It took", time.Since(timeEUR).Seconds(), "seconds")
 			}
-		case val := <-gbp_usd:
+		case val := <-gbpUSD:
 			if val < 1.35 && !buyGBP {
 				holdGBP = val
 				timeGBP = time.Now()
@@ -68,7 +68,7 @@ func selectPair() {
 				buyGBP = false
 				fmt.Println("Detected GBP/USD at", holdGBP, ", bought at", val, ". It took", time.Since(timeGBP).Seconds(), "seconds")
 			}
-		case val := <-jpy_usd:
+		case val := <-jpyUSD:
 			if val < 0.0085 && !buyJPY {
 				holdJPY = val
 				timeJPY = time.Now()

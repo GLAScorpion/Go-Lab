@@ -19,8 +19,8 @@ const (
 	kStationWagon = "una Station Wagon"
 )
 
-var orders = make(map[Cliente]Veicolo)
-var count = make(map[Veicolo]int)
+var orders = make(map[Cliente]Veicolo) //mappa che lega un cliente alla sua scelta
+var count = make(map[Veicolo]int)      // mappa che conta le prenotazioni dei veicoli
 
 func main() {
 	num := 10
@@ -32,7 +32,7 @@ func main() {
 
 func noleggia(cliente Cliente) {
 	val := Veicolo{}
-	switch rand.Int() % 3 {
+	switch rand.Int() % 3 { //sceglie un veicolo random tra tre
 	case 0:
 		val.tipo = kBerlina
 	case 1:
@@ -40,8 +40,8 @@ func noleggia(cliente Cliente) {
 	case 2:
 		val.tipo = kStationWagon
 	}
-	orders[cliente] = val
-	count[val]++
+	orders[cliente] = val //registra cliente e veicolo
+	count[val]++          // aumenta il conteggio dei veicoli
 	fmt.Printf("Il cliente %s ha noleggiato %s \n", cliente.nome, val.tipo)
 }
 
@@ -59,7 +59,7 @@ func stampa() {
 	}
 }
 
-func clientGen() (res string) {
+func clientGen() (res string) { //genera randomicamente il nome di un cliente
 	nameL := (rand.Int() % 5) + 4
 	for i := 0; i < nameL; i++ {
 		res += string(rune((rand.Int() % 26) + 65))
