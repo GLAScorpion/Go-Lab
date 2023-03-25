@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 )
 
 type Cliente struct {
@@ -11,6 +12,11 @@ type Cliente struct {
 
 type Veicolo struct {
 	tipo string
+}
+
+type Ordine struct {
+	cliente Cliente
+	veicolo Veicolo
 }
 
 const (
@@ -22,11 +28,22 @@ const (
 var orders = make(map[Cliente]Veicolo) //mappa che lega un cliente alla sua scelta
 var count = make(map[Veicolo]int)      // mappa che conta le prenotazioni dei veicoli
 
+var ch = make(chan Ordine)
+var wg = sync.WaitGroup{}
+
 func main() {
 	num := 10
+
 	for i := 0; i < num; i++ {
-		noleggia(Cliente{clientGen()})
+		wg.Add(1)
+		go noleggia(Cliente{clientGen()})
 	}
+	for i := 0; i < num; i++ {
+		ordine := <-ch                          // riceve l'ordine
+		orders[ordine.cliente] = ordine.veicolo // registra cliente e veicolo
+		count[ordine.veicolo]++                 // aumenta il conteggio dei veicoli
+	}
+	wg.Wait()
 	stampa()
 }
 
@@ -40,9 +57,9 @@ func noleggia(cliente Cliente) {
 	case 2:
 		val.tipo = kStationWagon
 	}
-	orders[cliente] = val //registra cliente e veicolo
-	count[val]++          // aumenta il conteggio dei veicoli
+	ch <- Ordine{cliente, val} //invia l'ordine nel canale
 	fmt.Printf("Il cliente %s ha noleggiato %s \n", cliente.nome, val.tipo)
+	wg.Done()
 }
 
 func stampa() {
